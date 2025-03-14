@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:13-3.1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: gis
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    command: python manage.py runserver 127.0.0.1:8000
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    ports:
+      - "2181:2181"
+
+  backend1:
+    build: ./backend1
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend1:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+      - kafka
+
+  backend2:
+    build: ./backend2
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - ./backend2:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+      - redis
+      - kafka
+
+  frontend:
+    build: ./frontend
+    command: python manage.py runserver 0.0.0.0:3000
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend1
+
+  celery:
+    build: ./backend1
+    command: celery -A backend1 worker --loglevel=info
+    volumes:
+      - ./backend1:/app
+    depends_on:
+      - db
+      - redis
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+  swagger:
+    image: swaggerapi/swagger-ui
+    ports:
+      - "8080:8080"
+    environment:
+      API_URL: http://backend1:8000/swagger.json
+
+  elk:
+    image: sebp/elk
+    ports:
+      - "5601:5601"
+      - "9200:9200"
+      - "5044:5044"
