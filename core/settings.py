@@ -30,8 +30,20 @@ INSTALLED_APPS = [
     'backend2.apps.Backend2Config',
     'rest_framework',
     'corsheaders',
-    'django.contrib.gis'
+    'django.contrib.gis',
+    'channels'
 ]
+
+ASGI_APPLICATION = 'core.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],  # Указываем Redis как бэкенд для Channels
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

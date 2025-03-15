@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Полигоны на карте</title>
+    <!-- Подключение Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 400px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Добавление полигона</h1>
+        <form id="polygonForm">
+            <div class="form-group">
+                <label for="name">Название полигона:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="coordinates">Координаты:</label>
+                <textarea id="coordinates" name="coordinates" rows="4" required></textarea>
+            </div>
+            <button type="button" id="addPoint">Добавить точку</button>
+            <button type="submit">Сохранить</button>
+        </form>
+        <div id="map"></div>
+        <h2>Список полигонов</h2>
+        <table id="polygonTable">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Координаты</th>
+                    <th>Пересекает антимеридиан</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Данные будут загружены через JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const map = L.map('map').setView([55.75, 37.61], 5);  // Центр на Москве
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const points = [];
+        document.getElementById('addPoint').addEventListener('click', () => {
+            const lat = prompt('Введите широту:');
+            const lng = prompt('Введите долготу:');
+            if (lat && lng) {
+                points.push([parseFloat(lat), parseFloat(lng)]);
+                L.marker([lat, lng]).addTo(map);
+                document.getElementById('coordinates').value = JSON.stringify(points);
+            }
+        });
+
+        document.getElementById('polygonForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const response = await fetch('/api/polygons/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: formData.get('name'),
+                    coordinates: JSON.parse(formData.get('coordinates')),
+                }),
+            });
+            if (response.ok) {
+                alert('Полигон успешно сохранен!');
+                location.reload();
+            } else {
+                alert('Ошибка при сохранении полигона');
+            }
+        });
+
+        async function loadPolygons() {
+            const response = await fetch('/api/polygons/');
+            const data = await response.json();
+            const tableBody = document.getElementById('polygonTable').querySelector('tbody');
+            tableBody.innerHTML = data.map(polygon => `
+                <tr>
+                    <td>${polygon.name}</td>
+                    <td>${JSON.stringify(polygon.coordinates)}</td>
+                    <td>${polygon.crosses_antimeridian ? 'Да' : 'Нет'}</td>
+                </tr>
+            `).join('');
+        }
+
+        loadPolygons();
+    </script>
+</body>
+</html>
