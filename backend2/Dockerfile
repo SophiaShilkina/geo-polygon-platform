@@ -12,4 +12,4 @@ RUN chown -R user:user /app
 
 USER user
 
-EXPOSE 8000 8001 3000
+EXPOSE 8001
