@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
-    'app.apps.AppConfig',
+    'polygons.apps.PolygonsConfig',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -51,7 +52,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'backend1.urls'
 
@@ -76,14 +80,12 @@ WSGI_APPLICATION = 'backend1.wsgi.application'
 
 # Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend1.settings')
-
-app = Celery('backend1')
-app.config_from_object('django.conf:settings', namespace='CELERY')
-app.autodiscover_tasks()
-
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
 
 
 # Database

@@ -9,11 +9,15 @@ services:
       POSTGRES_DB: gis
     ports:
       - "5432:5432"
+    networks:
+      - app-network
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
+    networks:
+      - app-network
 
   kafka:
     image: bitnami/kafka:latest
@@ -24,11 +28,15 @@ services:
       - "9092:9092"
     depends_on:
       - zookeeper
+    networks:
+      - app-network
 
   zookeeper:
     image: bitnami/zookeeper:latest
     ports:
       - "2181:2181"
+    networks:
+      - app-network
 
   backend1:
     build: ./backend1
@@ -41,6 +49,8 @@ services:
       - db
       - redis
       - kafka
+    networks:
+      - app-network
 
   backend2:
     build: ./backend2
@@ -53,16 +63,17 @@ services:
       - db
       - redis
       - kafka
+    networks:
+      - app-network
 
   frontend:
     build: ./frontend
-    command: python manage.py runserver 0.0.0.0:3000
-    volumes:
-      - ./frontend:/app
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - backend1
+    networks:
+      - app-network
 
   celery:
     build: ./backend1
@@ -72,6 +83,8 @@ services:
     depends_on:
       - db
       - redis
+    networks:
+      - app-network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -82,6 +95,8 @@ services:
       - "5050:80"
     depends_on:
       - db
+    networks:
+      - app-network
 
   swagger:
     image: swaggerapi/swagger-ui
@@ -89,6 +104,8 @@ services:
       - "8080:8080"
     environment:
       API_URL: http://backend1:8000/swagger.json
+    networks:
+      - app-network
 
   elk:
     image: sebp/elk
@@ -96,3 +113,9 @@ services:
       - "5601:5601"
       - "9200:9200"
       - "5044:5044"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

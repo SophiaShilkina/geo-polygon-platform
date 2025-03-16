@@ -1,12 +1,22 @@
-FROM python:3.12.6-alpine3.20
+FROM node:18-alpine as build
 
 WORKDIR /app
 
-COPY . /app
+COPY frontend/package*.json ./frontend/
 
-RUN adduser --disabled-password user
-RUN chown -R user:user /app
+WORKDIR /app/frontend
 
-USER user
+RUN npm install
 
-EXPOSE 3000
+COPY frontend .
+
+RUN npm run build
+
+FROM nginx:alpine
+
+COPY --from=build /app/frontend/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
