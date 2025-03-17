@@ -1,27 +1,84 @@
-from celery import shared_task
-from .models import Polygon
+import requests
+import json
 import logging
+from celery import shared_task
+from django.conf import settings
+from .models import Polygon, InvalidPolygon
+from kafka import KafkaConsumer
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 logger = logging.getLogger(__name__)
 
 
+BACKEND2_URL = "http://backend2:8001/check/"
+KAFKA_TOPIC = "polygon_check_result"
+KAFKA_SERVER = "kafka:9092"
+
+
 @shared_task
-def check_polygon_intersection(polygon_id):
+def send_polygon_for_validation(polygon_id):
     try:
-        """
-        Задача для проверки пересечения полигона с другими полигонами.
-        """
         polygon = Polygon.objects.get(id=polygon_id)
-        # Логика проверки пересечения
-        # Например, использование GEOS для проверки пересечения
-        intersects = False  # Заглушка для примера
-        if intersects:
-            # Если есть пересечение, сохраняем в отдельную таблицу
-            # и отправляем уведомление
-            pass
-        logger.info(f"Проверка полигона {polygon.id} завершена")
-        return intersects
+        data = {
+            "name": polygon.name,
+            "coordinates": json.loads(polygon.coordinates.json),
+        }
+        response = requests.post(BACKEND2_URL, json=data)
+
+        if response.status_code == 200:
+            logger.info(f"Полигон {polygon.name} отправлен на проверку")
+        else:
+            logger.error(f"Ошибка при отправке полигона: {response.text}")
 
     except Exception as e:
-        logger.error(f"Ошибка при проверке полигона: {e}")
+        logger.error(f"Ошибка Celery-задачи send_polygon_for_validation: {e}")
+
+
+@shared_task
+def process_polygon_validation_results():
+    consumer = KafkaConsumer(
+        KAFKA_TOPIC,
+        bootstrap_servers=KAFKA_SERVER,
+        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+    )
+
+    channel_layer = get_channel_layer()
+
+    for message in consumer:
+        result = message.value
+        polygon_data = result.get("polygon")
+        status = result.get("status")
+
+        if status == "invalid":
+            invalid_polygon = InvalidPolygon.objects.create(
+                name=polygon_data["name"],
+                coordinates=polygon_data["coordinates"],
+                reason="Пересечение с другими полигонами"
+            )
+
+            intersecting_polygons = []
+            for poly in result["intersecting_polygons"]:
+                p, _ = Polygon.objects.get_or_create(name=poly["name"], coordinates=poly["coordinates"])
+                invalid_polygon.intersecting_polygons.add(p)
+                intersecting_polygons.append({
+                    "name": p.name,
+                    "coordinates": json.loads(p.coordinates.json)
+                })
+
+            invalid_polygon.save()
+
+            message = {
+                "status": "invalid",
+                "polygon": {
+                    "name": invalid_polygon.name,
+                    "coordinates": json.loads(invalid_polygon.coordinates.json),
+                },
+                "intersecting_polygons": intersecting_polygons
+            }
+
+            async_to_sync(channel_layer.group_send)(
+                "polygon_notifications",
+                {"type": "send_polygon_notification", "message": message}
+            )

@@ -41,7 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'polygons.apps.PolygonsConfig',
+    'rest_framework',
     'corsheaders',
+    'channels',
+    'rest_framework_swagger',
 ]
 
 MIDDLEWARE = [
@@ -77,6 +80,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend1.wsgi.application'
 
+ASGI_APPLICATION = 'backend1.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        'CONFIG': {
+            "hosts": [("redis://127.0.0.1:6379/0")],
+        },
+    },
+}
+
 
 # Celery
 
@@ -85,7 +99,21 @@ CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+CELERY_TIMEZONE = 'Europe/Moscow'
+
+
+# Kafka
+
+KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
+KAFKA_TOPIC = 'polygon_check_result'
+
+
+# Swagger
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+    'SECURITY_DEFINITIONS': None,
+}
 
 
 # Database
@@ -101,9 +129,6 @@ DATABASES = {
         'PORT': '5432',
     }
 }
-
-
-
 
 
 # Django REST Framework
@@ -139,9 +164,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 

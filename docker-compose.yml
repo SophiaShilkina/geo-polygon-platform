@@ -35,12 +35,14 @@ services:
     image: bitnami/zookeeper:latest
     ports:
       - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
     networks:
       - app-network
 
   backend1:
     build: ./backend1
-    command: python manage.py runserver 0.0.0.0:8000
+    command: daphne -b 0.0.0.0 -p 8000 backend1.asgi:application
     volumes:
       - ./backend1:/app
     ports:
