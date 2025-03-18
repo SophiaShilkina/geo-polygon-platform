@@ -7,19 +7,15 @@
 - **База данных** (PostgreSQL с PostGIS)
 - **Кеширование** (Redis)
 - **Очереди задач** (Celery)
-- **Брокер сообщений** (Kafka)
+- **Брокер сообщений** (Kafka, Zookeeper)
 - **Логирование и мониторинг** (ELK Stack)
 - **Документация API** (Swagger UI)
 - **Администрирование базы данных** (pgAdmin)
-
----
 
 ## Требования
 
 1. Docker и Docker Compose.
 2. Свободные порты: ```5432, 6379, 8000, 8001, 3000, 8080, 5550, 5601, 9200, 5004```
-
----
 
 ## Запуск проекта
 
@@ -37,7 +33,7 @@
 - Frontend: http://localhost:3000
 - Swagger UI: http://localhost:8080
 - pgAdmin: http://localhost:5550
-- Kibana (ELK): http://localhost:5601
+- Kibana: http://localhost:5601
 
 ---
 
@@ -45,8 +41,7 @@
 
 ## pgAdmin
 
-### URL: http://localhost:5050
-
+- URL: http://localhost:5550
 - Логин: ```admin@gmail.com```
 - Пароль: ```admin```
 
@@ -59,14 +54,46 @@ Connection:
 - Host name/address: ```db```
 - Port: ```5432```
 - Maintenance database: ```gis```
-- Username: ```admin```
-- Password: ```admin```
+- Username: ```postgres```
+- Password: ```1234```
+
+### Query Tool Workspace:
+
+- Existing Server: ```GIS```
+- Database: ```gis```
+- User: ```postgres```
+- Password: ```1234```
 
 ### Примеры использования:
 
 **Просмотр таблиц:**     
 Servers → GIS → Databases → gis → Schemas → public → Tables
 
-**SQL-запросы:**     
-...
+**SQL-запросы:**   
+- Получение всех полигонов: 
+```
+SELECT * FROM polygons_polygon;
+```
+- Получение всех полигонов с координатами в читаемом формате:
+```
+SELECT id, name, ST_AsText(coordinates) AS coordinates, crosses_antimeridian FROM polygons_polygon;
+```
+- Получение всех полигонов и связных полей:
+```
+SELECT 
+    p.id AS polygon_id,
+    p.name AS polygon_name,
+    ST_AsText(p.coordinates) AS polygon_coordinates,
+    p.crosses_antimeridian,
+    u.id AS user_id,
+    u.username AS user_username
+FROM 
+    polygons_polygon AS p
+LEFT JOIN 
+    polygons_polygonuserassignment AS pua ON p.id = pua.polygon_id
+LEFT JOIN 
+    auth_user AS u ON pua.user_id = u.id;
+```
 
+## Ошибки:
+raise serializers.ValidationError("Полигон должен содержать как минимум 3 точки.")

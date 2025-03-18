@@ -10,8 +10,5 @@ class PolygonConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard("polygon_notifications", self.channel_name)
 
-    async def polygon_intersection(self, event):
-        await self.send(text_data=json.dumps({
-            "message": event["message"],
-            "intersections": event["intersections"]
-        }))
+    async def send_polygon_notification(self, event):
+        await self.send(text_data=json.dumps(event["message"]))

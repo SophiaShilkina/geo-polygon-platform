@@ -78,7 +78,19 @@ def process_polygon_validation_results():
                 "intersecting_polygons": intersecting_polygons
             }
 
+            print("WebSocket отправка:", json.dumps(message, indent=4))
+
             async_to_sync(channel_layer.group_send)(
                 "polygon_notifications",
-                {"type": "send_polygon_notification", "message": message}
+                {
+                    "type": "send_polygon_notification",
+                    "message": {
+                        "status": "invalid",
+                        "polygon": {
+                            "name": invalid_polygon.name,
+                            "coordinates": json.loads(invalid_polygon.coordinates.json),
+                        },
+                        "intersecting_polygons": intersecting_polygons
+                    }
+                }
             )
