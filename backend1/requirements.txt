@@ -11,4 +11,4 @@ django-filter==23.5
 drf-yasg==1.21.10
 requests==2.32.3
 daphne==4.1.2
-django-rest-swagger==2.0.7
+python-logstash==0.4.8

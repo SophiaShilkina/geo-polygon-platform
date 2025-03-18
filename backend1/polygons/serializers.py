@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import Polygon as GeoPolygon
 from .models import Polygon, PolygonUserAssignment, InvalidPolygon
 
 
@@ -12,6 +13,13 @@ class PolygonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Polygon
         fields = ['id', 'name', 'coordinates', 'crosses_antimeridian', 'users']
+
+    def create(self, validated_data):
+        coordinates = validated_data.pop('coordinates')
+        polygon = GeoPolygon(coordinates)
+        validated_data['coordinates'] = polygon
+
+        return super().create(validated_data)
 
 
 class PolygonUserAssignmentSerializer(serializers.ModelSerializer):

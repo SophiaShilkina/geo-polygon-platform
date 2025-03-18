@@ -8,14 +8,10 @@ from .serializers import PolygonSerializer, InvalidPolygonSerializer
 class PolygonViewSet(viewsets.ModelViewSet):
     queryset = Polygon.objects.all()
     serializer_class = PolygonSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        polygon = serializer.save()
-        check_polygon_intersection.delay(polygon.id)
+    # permission_classes = [IsAuthenticated]
 
 
 class InvalidPolygonViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = InvalidPolygon.objects.all()
     serializer_class = InvalidPolygonSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]

@@ -94,7 +94,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@gmail.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"
+      - "5550:80"
     depends_on:
       - db
     networks:
@@ -105,7 +105,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      API_URL: http://backend1:8000/swagger.json
+      API_URL: http://localhost:8000/swagger.json
     networks:
       - app-network
 
@@ -114,7 +114,9 @@ services:
     ports:
       - "5601:5601"
       - "9200:9200"
-      - "5044:5044"
+      - "5004:5044"
+    volumes:
+      - ./elk/logstash/config/logstash.conf:/etc/logstash/conf.d/logstash.conf
     networks:
       - app-network
 
