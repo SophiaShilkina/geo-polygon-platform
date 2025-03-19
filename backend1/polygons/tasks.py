@@ -4,17 +4,17 @@ import logging
 from celery import shared_task
 from django.conf import settings
 from .models import Polygon, InvalidPolygon
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, KafkaProducer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 
 logger = logging.getLogger(__name__)
 
-
-BACKEND2_URL = "http://backend2:8001/check/"
-KAFKA_TOPIC = "polygon_check_result"
-KAFKA_SERVER = "kafka:9092"
+producer = KafkaProducer(
+    bootstrap_servers=settings.KAFKA_SERVER,
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
 
 
 @shared_task
@@ -25,12 +25,8 @@ def send_polygon_for_validation(polygon_id):
             "name": polygon.name,
             "coordinates": json.loads(polygon.coordinates.json),
         }
-        response = requests.post(BACKEND2_URL, json=data)
-
-        if response.status_code == 200:
-            logger.info(f"Полигон {polygon.name} отправлен на проверку")
-        else:
-            logger.error(f"Ошибка при отправке полигона: {response.text}")
+        producer.send('polygon_check_request', data)
+        logger.info(f"Полигон {polygon.name} отправлен на проверку через Kafka")
 
     except Exception as e:
         logger.error(f"Ошибка Celery-задачи send_polygon_for_validation: {e}")
@@ -39,8 +35,8 @@ def send_polygon_for_validation(polygon_id):
 @shared_task
 def process_polygon_validation_results():
     consumer = KafkaConsumer(
-        KAFKA_TOPIC,
-        bootstrap_servers=KAFKA_SERVER,
+        settings.KAFKA_TOPIC,
+        bootstrap_servers=settings.KAFKA_SERVER,
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
     )
 

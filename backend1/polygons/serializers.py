@@ -7,7 +7,6 @@ from .models import Polygon, PolygonUserAssignment, InvalidPolygon
 
 User = get_user_model()
 
-
 logger = logging.getLogger(__name__)
 
 

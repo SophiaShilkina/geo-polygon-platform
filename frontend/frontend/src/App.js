@@ -2,6 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker } from 'react-leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const WS_URL = 'ws://localhost:8000/ws/polygons/';
 
@@ -38,6 +52,27 @@ const App = () => {
         };
     }, []);
 
+    const normalizeLongitude = (lng) => {
+        if (lng > 180) {
+            return lng - 360;
+        } else if (lng < -180) {
+            return lng + 360;
+        }
+        return lng;
+    };
+
+    const crossesAntimeridian = (coordinates) => {
+        let minLng = 180;
+        let maxLng = -180;
+
+        coordinates.forEach(([lat, lng]) => {
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+        });
+
+        return (maxLng - minLng) > 180;
+    };
+
     const addPoint = () => {
         const lat = prompt('Введите широту:');
         if (lat === null) {
@@ -51,27 +86,66 @@ const App = () => {
             return;
         }
 
-        if (isNaN(parseFloat(lat))) {
+        const normalizeDecimal = (value) => {
+            value = value.replace(/[^0-9.]/g, '.');
+
+            const parts = value.split('.');
+            if (parts.length > 1) {
+                value = `${parts[0]}.${parts.slice(1).join('')}`;
+            }
+
+            return value;
+        };
+
+        const normalizedLat = normalizeDecimal(lat);
+        const normalizedLng = normalizeDecimal(lng);
+
+        if (isNaN(parseFloat(normalizedLat))) {
             alert("Широта должна быть числом. Точка не добавлена.");
             return;
         }
 
-        if (isNaN(parseFloat(lng))) {
+        if (isNaN(parseFloat(normalizedLng))) {
             alert("Долгота должна быть числом. Точка не добавлена.");
             return;
         }
 
-        const newPoint = [parseFloat(lat), parseFloat(lng)];
+        const isValidCoordinate = (value, min, max) => {
+            const num = parseFloat(value);
+            return !isNaN(num) && num >= min && num <= max;
+        };
+
+        if (!isValidCoordinate(normalizedLat, -90, 90)) {
+            alert("Широта должна быть числом от -90 до 90. Точка не добавлена.");
+            return;
+        }
+
+        if (!isValidCoordinate(normalizedLng, -360, 360)) {
+            alert("Долгота должна быть числом от -360 до 360. Точка не добавлена.");
+            return;
+        }
+
+        const newPoint = [parseFloat(normalizedLat), parseFloat(normalizedLng)];
         setCoordinates([...coordinates, newPoint]);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const normalizedCoordinates = coordinates.map(([lat, lng]) => [
+            lat,
+            normalizeLongitude(lng),
+        ]);
+
+        const crossesAntimeridianFlag = crossesAntimeridian(normalizedCoordinates);
+
         try {
             const response = await axios.post('http://localhost:8000/api/polygons/', {
                 name,
-                coordinates,
+                coordinates: normalizedCoordinates,
+                crosses_antimeridian: crossesAntimeridianFlag,
             });
+
             setPolygons([...polygons, response.data]);
             setCoordinates([]);
             setName('');
@@ -80,13 +154,15 @@ const App = () => {
         }
     };
 
-    const parsePolygon = (wkt) => {
-        const match = wkt.match(/POLYGON \(\((.+)\)\)/);
-        if (!match) return [];
-        return match[1].split(', ').map(coord => {
-            const [lng, lat] = coord.split(' ').map(Number);
-            return [lat, lng];
+    const parseWKT = (wkt) => {
+        const cleanedWkt = wkt.replace(/SRID=\d+;POLYGON \(\(/, '').replace(/\)\)$/, '');
+
+        const coords = cleanedWkt.split(',').map(coord => {
+            const [lng, lat] = coord.trim().split(' ').map(parseFloat);
+            return [normalizeLongitude(lng), lat];
         });
+
+        return coords;
     };
 
     const loadPolygons = async () => {
@@ -94,7 +170,7 @@ const App = () => {
             const response = await axios.get('http://localhost:8000/api/polygons/');
             const transformedPolygons = response.data.results.map(polygon => ({
                 ...polygon,
-                coordinates: parsePolygon(polygon.coordinates),
+                coordinates: parseWKT(polygon.coordinates),
             }));
             setPolygons(transformedPolygons);
         } catch (error) {
@@ -137,10 +213,20 @@ const App = () => {
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                            attribution='© OpenStreetMap contributors' />
                 {coordinates.map((point, index) => <Marker key={index} position={point} />)}
-                {polygons.map((polygon, index) => <Polygon key={index} positions={polygon.coordinates} />)}
-                {invalidPolygons.map((polygon, index) => <Polygon key={index}
-                                                                  positions={polygon.polygon.coordinates}
-                                                                  color="red" />)}
+                {polygons.map((polygon, index) => (
+                    <Polygon
+                        key={index}
+                        positions={polygon.coordinates}
+                        color={polygon.crosses_antimeridian ? 'red' : 'blue'}
+                    />
+                ))}
+                {invalidPolygons.map((polygon, index) => (
+                    <Polygon
+                        key={index}
+                        positions={polygon.polygon.coordinates}
+                        color="red"
+                    />
+                ))}
             </MapContainer>
 
             <h2>Список полигонов</h2>
@@ -153,13 +239,13 @@ const App = () => {
                 </tr>
                 </thead>
                 <tbody>
-                    {polygons.map((polygon, index) => (
-                        <tr key={index}>
-                            <td>{polygon.name}</td>
-                            <td>{JSON.stringify(polygon.coordinates)}</td>
-                            <td>{polygon.crosses_antimeridian ? 'True' : 'False'}</td>
-                        </tr>
-                    ))}
+                {polygons.map((polygon, index) => (
+                    <tr key={index}>
+                        <td>{polygon.name}</td>
+                        <td>{JSON.stringify(polygon.coordinates)}</td>
+                        <td>{polygon.crosses_antimeridian ? 'True' : 'False'}</td>
+                    </tr>
+                ))}
                 </tbody>
             </table>
         </div>

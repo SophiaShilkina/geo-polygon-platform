@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from celery import Celery
+import logging
+import logstash
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -106,6 +108,7 @@ CELERY_TIMEZONE = 'Europe/Moscow'
 
 KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
 KAFKA_TOPIC = 'polygon_check_result'
+KAFKA_SERVER = "kafka:9092"
 
 
 # Swagger
@@ -170,18 +173,33 @@ LOGGING = {
         'logstash': {
             'level': 'INFO',
             'class': 'logstash.TCPLogstashHandler',
-            'host': 'elk',
-            'port': 5004,
+            'host': 'elk',  # Имя сервиса ELK в Docker
+            'port': 5004,   # Порт Logstash
             'version': 1,
+            'message_type': 'logstash',
             'fqdn': False,
             'tags': ['django'],
         },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
     },
     'loggers': {
-        'django': {
-            'handlers': ['logstash'],
+        '': {
+            'handlers': ['logstash', 'console'],
             'level': 'INFO',
             'propagate': True,
+        },
+        'django': {
+            'handlers': ['logstash', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'backend1': {
+            'handlers': ['logstash', 'console'],
+            'level': 'INFO',
+            'propagate': False,
         },
     },
 }
