@@ -124,9 +124,19 @@ _Ошибка:_ ```raise serializers.ValidationError("Полигон не дол
 замыкающих точек.")```  
 _Условие возникновения:_ В полигоне обнаружены повторяющиеся координаты, за исключением случая, когда первая и 
 последняя точки совпадают (замыкание полигона).     
-_Решение:_ Убедитесь, что все координаты полигона уникальны, кроме первой и последней точки, если полигон замкнут.
+_Решение:_ Убедитесь, что все координаты полигона уникальны, кроме первой и последней точки, когда полигон замкнут.
 
 **Дополнительные примечания**   
 _Замыкание полигона:_ Если полигон не замкнут (первая и последняя точки не совпадают), метод **автоматически** добавляет 
 первую точку в конец списка координат для замыкания. Это действие логируется с помощью ```logger.info(f"Полигон не был 
 замкнут. Первая точка {first_point} добавлена в конец для замыкания.")```
+
+Принудительное удаление проблемного топика
+docker-compose exec kafka kafka-topics.sh --delete --topic polygon_check_request --bootstrap-server kafka:9092
+docker-compose exec zookeeper bash
+zkCli.sh -server zookeeper:2181
+ls /brokers/topics
+deleteall /brokers/topics/polygon_check_request
+docker-compose restart kafka 
+docker-compose exec kafka kafka-topics.sh --list --bootstrap-server kafka:9092
+docker-compose exec kafka kafka-topics.sh --create --topic polygon_check_request --partitions 1 --replication-factor 1 --bootstrap-server kafka:9092

@@ -147,9 +147,16 @@ const App = () => {
                 crosses_antimeridian: crossesAntimeridianFlag,
             });
 
-            if (response.data && response.data.coordinates && response.data.coordinates.length >= 3) {
-                setPolygons([...polygons, response.data]);
-                console.log('Данные полигона:', response.data);
+            if (response.data && response.data.coordinates) {
+                const parsedCoordinates = parseWKT(response.data.coordinates);
+
+                if (parsedCoordinates.length >= 3) {
+                    setPolygons([...polygons, { ...response.data, coordinates: parsedCoordinates }]);
+                    console.log('Данные полигона:', response.data);
+                } else {
+                    console.error('Некорректные данные полигона:', response.data);
+                    alert('Ошибка: Получены некорректные данные полигона.');
+                }
             } else {
                 console.error('Некорректные данные полигона:', response.data);
                 alert('Ошибка: Получены некорректные данные полигона.');
@@ -165,7 +172,8 @@ const App = () => {
         console.log("Парсим WKT:", wkt);
         if (!wkt || typeof wkt !== "string") return [];
 
-        const match = wkt.match(/POLYGON \(\((.+)\)\)/);
+        const cleanedWKT = wkt.replace(/SRID=\d+;/, '');
+        const match = cleanedWKT.match(/POLYGON \(\((.+)\)\)/);
         if (!match) return [];
 
         const coords = match[1].split(',').map(coord => {
