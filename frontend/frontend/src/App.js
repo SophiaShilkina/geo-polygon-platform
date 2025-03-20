@@ -37,6 +37,7 @@ const App = () => {
                 console.log("Parsed WebSocket data:", data);
 
                 if (data.status === "invalid") {
+                    console.log("Получен некорректный полигон:", data.polygon.coordinates);
                     setInvalidPolygons(prev => [...prev, data.intersecting_polygons]);
                     alert(`Ошибка: Полигон ${data.polygon.name} пересекается с другими`);
                 }
@@ -87,7 +88,7 @@ const App = () => {
         }
 
         const normalizeDecimal = (value) => {
-            value = value.replace(/[^0-9.]/g, '.');
+            value = value.replace(/[^0-9.\-]/g, '.');
 
             const parts = value.split('.');
             if (parts.length > 1) {
@@ -146,7 +147,13 @@ const App = () => {
                 crosses_antimeridian: crossesAntimeridianFlag,
             });
 
-            setPolygons([...polygons, response.data]);
+            if (response.data && response.data.coordinates && response.data.coordinates.length >= 3) {
+                setPolygons([...polygons, response.data]);
+                console.log('Данные полигона:', response.data);
+            } else {
+                console.error('Некорректные данные полигона:', response.data);
+                alert('Ошибка: Получены некорректные данные полигона.');
+            }
             setCoordinates([]);
             setName('');
         } catch (error) {
@@ -155,14 +162,19 @@ const App = () => {
     };
 
     const parseWKT = (wkt) => {
-        const cleanedWkt = wkt.replace(/SRID=\d+;POLYGON \(\(/, '').replace(/\)\)$/, '');
+        console.log("Парсим WKT:", wkt);
+        if (!wkt || typeof wkt !== "string") return [];
 
-        const coords = cleanedWkt.split(',').map(coord => {
+        const match = wkt.match(/POLYGON \(\((.+)\)\)/);
+        if (!match) return [];
+
+        const coords = match[1].split(',').map(coord => {
             const [lng, lat] = coord.trim().split(' ').map(parseFloat);
             return [normalizeLongitude(lng), lat];
         });
 
-        return coords;
+        console.log("Парсинг завершен:", coords);
+        return coords.length > 0 ? coords : [];
     };
 
     const loadPolygons = async () => {
@@ -214,11 +226,14 @@ const App = () => {
                            attribution='© OpenStreetMap contributors' />
                 {coordinates.map((point, index) => <Marker key={index} position={point} />)}
                 {polygons.map((polygon, index) => (
-                    <Polygon
-                        key={index}
-                        positions={polygon.coordinates}
-                        color={polygon.crosses_antimeridian ? 'red' : 'blue'}
-                    />
+                    polygon.coordinates.length > 0 ? (
+                        <Polygon
+                            key={index}
+                            positions={polygon.coordinates}
+                            color={polygon.crosses_antimeridian ? 'red' : 'blue'} />
+                    ) : (
+                        console.warn(`Пропущен полигон ${polygon.name}: пустые координаты`)
+                    )
                 ))}
                 {invalidPolygons.map((polygon, index) => (
                     <Polygon

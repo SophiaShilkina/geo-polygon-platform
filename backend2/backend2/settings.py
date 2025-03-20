@@ -78,11 +78,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend2.wsgi.application'
 
 
+# Celery
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Europe/Moscow'
+
+
 # Kafka
 
 KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
 KAFKA_TOPIC = 'polygon_check_result'
-KAFKA_SERVER = "kafka:9092"
 
 
 # Database
@@ -141,15 +150,20 @@ LOGGING = {
         },
     },
     'loggers': {
-        '': {
+        'django': {
+            'handlers': ['logstash', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'backend1': {
             'handlers': ['logstash', 'console'],
             'level': 'INFO',
             'propagate': True,
         },
-        'polygons': {
+        'celery': {
             'handlers': ['logstash', 'console'],
             'level': 'INFO',
-            'propagate': False,
+            'propagate': True,
         },
     },
 }

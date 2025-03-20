@@ -77,14 +77,23 @@ services:
     networks:
       - app-network
 
-  celery:
+  celery1:
     build: ./backend1
     command: celery -A backend1 worker --loglevel=info
     volumes:
       - ./backend1:/app
     depends_on:
-      - db
-      - redis
+      - backend1
+    networks:
+      - app-network
+
+  celery2:
+    build: ./backend2
+    command: celery -A backend2 worker --loglevel=info
+    volumes:
+      - ./backend2:/app
+    depends_on:
+      - backend2
     networks:
       - app-network
 
