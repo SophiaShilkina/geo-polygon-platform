@@ -1,5 +1,5 @@
 from django.urls import re_path
-from polygons.consumers import PolygonConsumer
+from .consumers import PolygonConsumer
 
 
 websocket_urlpatterns = [

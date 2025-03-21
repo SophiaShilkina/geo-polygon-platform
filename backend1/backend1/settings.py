@@ -102,12 +102,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Europe/Moscow'
+CELERY_DEFAULT_QUEUE = 'backend1_queue'
 
 
 # Kafka
 
 KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
-KAFKA_TOPIC = 'polygon_check_result'
 
 
 # Swagger

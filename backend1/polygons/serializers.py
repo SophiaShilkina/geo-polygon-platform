@@ -1,4 +1,5 @@
-import logging
+from .logger import logger
+import json
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Polygon as GeoPolygon
@@ -7,8 +8,6 @@ from .tasks import send_polygon_for_validation
 
 
 User = get_user_model()
-
-logger = logging.getLogger(__name__)
 
 
 class PolygonSerializer(serializers.ModelSerializer):
@@ -41,13 +40,16 @@ class PolygonSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        polygon = GeoPolygon(validated_data['coordinates'])
+        polygon = Polygon(
+            name=validated_data['name'],
+            coordinates=GeoPolygon(validated_data['coordinates']))
 
-        instance = Polygon(name=validated_data['name'], coordinates=polygon)
-        instance.save()
-        send_polygon_for_validation.delay(instance.id)
+        send_polygon_for_validation.delay({
+            "name": polygon.name,
+            "coordinates": json.loads(polygon.coordinates.json),
+        })
 
-        return instance
+        return polygon
 
 
 def has_duplicate_coordinates(coordinates):

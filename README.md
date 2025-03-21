@@ -25,17 +25,13 @@
 ```
 2. Запустите проект:
 ```bash
-  docker-compose up --build
+  docker-compose up --build -d
 ```
-3. Примените миграции:
-```bash
-  docker-compose exec backend1 python manage.py migrate
-````
-4. Создайте администратора:
+3. Создайте администратора:
 ```bash
   docker-compose exec backend1 python manage.py createsuperuser
 ```
-5. После запуска сервисы будут доступны по следующим адресам:
+4. После запуска сервисы будут доступны по следующим адресам:
 - Backend 1: http://localhost:8000
 - Backend 2: http://localhost:8001
 - Frontend: http://localhost:3000
