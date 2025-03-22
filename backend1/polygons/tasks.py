@@ -1,15 +1,15 @@
-from .logger import logger
 from celery import shared_task
 from .producer import KafkaMessageProducer
 from .consumers import KafkaMessageConsumer
+from .logger import logger
 
 
 @shared_task(queue='backend1_queue')
 def send_polygon_for_validation(polygon_data):
     try:
         producer = KafkaMessageProducer()
-        producer.send_message(polygon_data)
-        logger.info(f"Полигон {polygon_data['name']} отправлен на проверку. Kafka Offset: {result.offset}")
+        producer.send_polygon_for_check(polygon_data)
+        logger.info(f"Полигон {polygon_data['name']} отправлен на проверку.")
 
     except Exception as e:
         logger.error(f"Ошибка Celery1-задачи send_polygon_for_validation: {e}")

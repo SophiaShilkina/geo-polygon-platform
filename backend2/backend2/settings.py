@@ -92,7 +92,6 @@ CELERY_DEFAULT_QUEUE = 'backend2_queue'
 # Kafka
 
 KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
-KAFKA_TOPIC = 'polygon_check_result'
 
 
 # Database

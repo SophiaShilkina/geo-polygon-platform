@@ -87,7 +87,7 @@ services:
 
   celery1:
     build: ./backend1
-    command: celery -A backend1 worker --loglevel=info
+    command: celery -A backend1 worker --loglevel=info -Q backend1_queue
     volumes:
       - ./backend1:/app
     depends_on:
@@ -97,7 +97,7 @@ services:
 
   celery2:
     build: ./backend2
-    command: celery -A backend2 worker --loglevel=info
+    command: celery -A backend2 worker --loglevel=info -Q backend2_queue
     volumes:
       - ./backend2:/app
     depends_on:

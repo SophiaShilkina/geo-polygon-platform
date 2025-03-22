@@ -1,11 +1,7 @@
 from .producer import KafkaMessageProducer
 from .consumer import KafkaMessageConsumer
 from celery import shared_task
-import json
 from .logger import logger
-from django.conf import settings
-from django.contrib.gis.geos import GEOSGeometry
-from .models import Polygon
 
 
 @shared_task(queue='backend2_queue')

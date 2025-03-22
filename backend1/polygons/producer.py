@@ -1,6 +1,7 @@
 from kafka import KafkaProducer
 import json
 from django.conf import settings
+from .logger import logger
 
 
 class KafkaMessageProducer:

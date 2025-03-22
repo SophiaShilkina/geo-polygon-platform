@@ -1,6 +1,7 @@
 from kafka import KafkaProducer
 import json
 from django.conf import settings
+from .logger import logger
 
 
 class KafkaMessageProducer:
@@ -13,4 +14,3 @@ class KafkaMessageProducer:
     def send_polygon_result(self, message):
         self.producer.send("polygon_check_result", message)
         self.producer.flush()
-        logger.info(f"Сообщение отправлено в Kafka (продюсер2): {message}")

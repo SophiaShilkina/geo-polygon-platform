@@ -25,7 +25,7 @@ class KafkaMessageConsumer:
             "polygon_check_result",
             bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
             value_deserializer=lambda v: json.loads(v.decode('utf-8')),
-            group_id="polygon_validator_backend1",
+            group_id="polygon_group_backend1",
             auto_offset_reset="earliest"
         )
 
@@ -42,46 +42,57 @@ class KafkaMessageConsumer:
 
             logger.info(f"Backend 1 получил результат: {status} для {polygon_data['name']}")
 
-            if status == "invalid":
-                invalid_polygon = InvalidPolygon.objects.create(
-                    name=polygon_data["name"],
-                    coordinates=GeoPolygon(polygon_data["coordinates"]),
-                    reason="Пересечение с другими полигонами"
-                )
+            try:
+                coordinates = polygon_data["coordinates"]["coordinates"][0]
+                new_polygon = GeoPolygon(coordinates)
 
-                intersecting_polygons = []
-                for poly in result["intersecting_polygons"]:
-                    p, _ = Polygon.objects.get_or_create(name=poly["name"], coordinates=poly["coordinates"])
-                    invalid_polygon.intersecting_polygons.add(p)
-                    intersecting_polygons.append({
-                        "name": p.name,
-                        "coordinates": json.loads(p.coordinates.json)
-                    })
+                if status == "invalid":
+                    invalid_polygon = InvalidPolygon.objects.create(
+                        name=polygon_data["name"],
+                        coordinates=new_polygon,
+                        reason="Пересечение с другими полигонами"
+                    )
 
-                invalid_polygon.save()
+                    intersecting_polygons = []
+                    for poly in result["intersecting_polygons"]:
+                        p, _ = Polygon.objects.get_or_create(
+                            name=poly["name"],
+                            coordinates=GeoPolygon(poly["coordinates"]["coordinates"][0])
+                        )
+                        invalid_polygon.intersecting_polygons.add(p)
+                        intersecting_polygons.append({
+                            "name": p.name,
+                            "coordinates": json.loads(p.coordinates.json)
+                        })
 
-                message = {
-                    "status": "invalid",
-                    "polygon": {
-                        "name": invalid_polygon.name,
-                        "coordinates": json.loads(invalid_polygon.coordinates.json),
-                    },
-                    "intersecting_polygons": intersecting_polygons
-                }
+                    invalid_polygon.save()
 
-                logger.info(f"Отправка WebSocket: {message}")
-
-                async_to_sync(channel_layer.group_send)(
-                    "polygon_notifications",
-                    {
-                        "type": "send_polygon_notification",
-                        "message": message
+                    message = {
+                        "status": "invalid",
+                        "polygon": {
+                            "name": invalid_polygon.name,
+                            "coordinates": json.loads(invalid_polygon.coordinates.json),
+                        },
+                        "intersecting_polygons": intersecting_polygons
                     }
-                )
-            else:
-                polygon = Polygon.objects.create(
-                    name=polygon_data["name"],
-                    coordinates=GeoPolygon(polygon_data["coordinates"])
-                )
-                polygon.save()
-                logger.info(f"Полигон {polygon_data['name']} добавлен в базу данных.")
+
+                    logger.info(f"Отправка WebSocket: {message}")
+
+                    async_to_sync(channel_layer.group_send)(
+                        "polygon_notifications",
+                        {
+                            "type": "send_polygon_notification",
+                            "message": message
+                        }
+                    )
+                else:
+                    polygon = Polygon.objects.create(
+                        name=polygon_data["name"],
+                        coordinates=new_polygon,
+                        crosses_antimeridian=result.get("crosses_antimeridian", False)
+                    )
+                    polygon.save()
+                    logger.info(f"Полигон {polygon_data['name']} добавлен в базу данных.")
+
+            except Exception as e:
+                logger.error(f"Ошибка при обработке полигона: {e}")

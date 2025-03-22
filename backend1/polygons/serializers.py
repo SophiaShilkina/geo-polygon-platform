@@ -42,11 +42,14 @@ class PolygonSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         polygon = Polygon(
             name=validated_data['name'],
-            coordinates=GeoPolygon(validated_data['coordinates']))
+            coordinates=GeoPolygon(validated_data['coordinates']),
+            crosses_antimeridian=validated_data.get('crosses_antimeridian', False)
+        )
 
         send_polygon_for_validation.delay({
             "name": polygon.name,
             "coordinates": json.loads(polygon.coordinates.json),
+            "crosses_antimeridian": polygon.crosses_antimeridian,
         })
 
         return polygon

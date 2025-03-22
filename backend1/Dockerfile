@@ -7,8 +7,9 @@ RUN apt-get update && \
     gdal-bin \
     libgdal-dev \
     python3-gdal \
-    && rm -rf /var/lib/apt/lists/*\
-    postgresql-client
+    postgresql-client \
+    iputils-ping && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /temp/requirements.txt
 RUN pip install -r /temp/requirements.txt

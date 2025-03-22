@@ -25,6 +25,7 @@ class PolygonUserAssignment(models.Model):
 class InvalidPolygon(models.Model):
     name = models.CharField(max_length=255)
     coordinates = models.PolygonField()
+    crosses_antimeridian = models.BooleanField(default=False)
     reason = models.TextField()
     intersecting_polygons = models.ManyToManyField(Polygon, related_name="invalid_intersections")
     created_at = models.DateTimeField(auto_now_add=True)
