@@ -30,17 +30,17 @@ class KafkaMessageConsumer:
                 result = {
                     "status": "invalid",
                     "polygon": polygon_data,
-                    "crosses_antimeridian": polygon_data.get("crosses_antimeridian", False),
-                    "intersecting_polygons": [
-                        {"name": p.name, "coordinates": json.loads(p.coordinates.json)}
+                    "intersecting_polygons": [{
+                        "name": p.name,
+                        "coordinates": json.loads(p.coordinates.json),
+                        "crosses_antimeridian": p.crosses_antimeridian}
                         for p in intersecting_polygons
                     ],
                 }
             else:
                 result = {
                     "status": "valid",
-                    "polygon": polygon_data,
-                    "crosses_antimeridian": polygon_data.get("crosses_antimeridian", False)
+                    "polygon": polygon_data
                 }
 
             yield result

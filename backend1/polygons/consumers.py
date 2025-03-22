@@ -50,6 +50,7 @@ class KafkaMessageConsumer:
                     invalid_polygon = InvalidPolygon.objects.create(
                         name=polygon_data["name"],
                         coordinates=new_polygon,
+                        crosses_antimeridian=polygon_data.get("crosses_antimeridian", False),
                         reason="Пересечение с другими полигонами"
                     )
 
@@ -57,12 +58,14 @@ class KafkaMessageConsumer:
                     for poly in result["intersecting_polygons"]:
                         p, _ = Polygon.objects.get_or_create(
                             name=poly["name"],
-                            coordinates=GeoPolygon(poly["coordinates"]["coordinates"][0])
+                            coordinates=GeoPolygon(poly["coordinates"]["coordinates"][0]),
+                            crosses_antimeridian=poly.get("crosses_antimeridian", False)
                         )
                         invalid_polygon.intersecting_polygons.add(p)
                         intersecting_polygons.append({
                             "name": p.name,
-                            "coordinates": json.loads(p.coordinates.json)
+                            "coordinates": json.loads(p.coordinates.json),
+                            "crosses_antimeridian": p.crosses_antimeridian,
                         })
 
                     invalid_polygon.save()
@@ -72,6 +75,7 @@ class KafkaMessageConsumer:
                         "polygon": {
                             "name": invalid_polygon.name,
                             "coordinates": json.loads(invalid_polygon.coordinates.json),
+                            "crosses_antimeridian": invalid_polygon.crosses_antimeridian,
                         },
                         "intersecting_polygons": intersecting_polygons
                     }
@@ -89,7 +93,7 @@ class KafkaMessageConsumer:
                     polygon = Polygon.objects.create(
                         name=polygon_data["name"],
                         coordinates=new_polygon,
-                        crosses_antimeridian=result.get("crosses_antimeridian", False)
+                        crosses_antimeridian=polygon_data.get("crosses_antimeridian", False)
                     )
                     polygon.save()
                     logger.info(f"Полигон {polygon_data['name']} добавлен в базу данных.")

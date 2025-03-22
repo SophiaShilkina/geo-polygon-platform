@@ -19,6 +19,9 @@ class PolygonSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def validate_coordinates(value):
+        if not value:
+            raise serializers.ValidationError("Полигон не может быть пустым.")
+
         if len(value) < 3:
             raise serializers.ValidationError("Полигон должен содержать как минимум 3 точки.")
 
