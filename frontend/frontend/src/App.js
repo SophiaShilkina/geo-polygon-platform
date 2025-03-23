@@ -188,7 +188,7 @@ const App = () => {
     const loadPolygons = async () => {
         try {
             const response = await axios.get('http://localhost:8000/api/polygons/');
-            const transformedPolygons = response.data.results.map(polygon => ({
+            const transformedPolygons = response.data.map(polygon => ({
                 ...polygon,
                 coordinates: parseWKT(polygon.coordinates),
             }));
