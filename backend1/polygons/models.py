@@ -1,5 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.core.cache import cache
+
 
 
 User = get_user_model()
@@ -13,6 +17,11 @@ class Polygon(models.Model):
 
     def __str__(self):
         return self.name
+
+
+@receiver([post_save, post_delete], sender=Polygon)
+def invalidate_polygon_cache(sender, **kwargs):
+    cache.delete("polygons_list")
 
 
 class PolygonUserAssignment(models.Model):
