@@ -5,50 +5,53 @@ from .models import Polygon, InvalidPolygon
 from .serializers import PolygonSerializer, InvalidPolygonSerializer
 from django.core.cache import cache
 from django.http import JsonResponse
-
-
-CACHE_TTL = getattr(settings, 'CACHE_TTL', DEFAULT_TIMEOUT)
+from django.conf import settings
+from .tasks import refresh_polygon_cache
 
 
 class PolygonViewSet(viewsets.ModelViewSet):
     queryset = Polygon.objects.all()
     serializer_class = PolygonSerializer
 
+    def list(self, request, *args, **kwargs):
+        cache_key = 'polygons_list'
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return Response(cached_data)
+
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        cache.set(cache_key, serializer.data, timeout=3600)
+
+        return Response(serializer.data)
+
+    def perform_create(self, serializer):
+        serializer.save()
+        refresh_polygon_cache.delay()
+
+    def perform_update(self, serializer):
+        serializer.save()
+        refresh_polygon_cache.delay()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        refresh_polygon_cache.delay()
+
 
 class InvalidPolygonViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = InvalidPolygon.objects.all()
     serializer_class = InvalidPolygonSerializer
 
+    def list(self, request, *args, **kwargs):
+        cache_key = 'invalid_polygons_list'
+        cached_data = cache.get(cache_key)
 
-class PolygonListView(APIView):
-    def get(self, request):
-        cache_key = "polygons_list"
-        cached_polygons = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
 
-        if cached_polygons is not None:
-            return Response(cached_polygons, status=status.HTTP_200_OK)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        cache.set(cache_key, serializer.data, timeout=3600)
 
-        polygons = Polygon.objects.all()
-        serializer = PolygonSerializer(polygons, many=True)
-        cache.set(cache_key, serializer.data, timeout=CACHE_TTL)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class PolygonCreateView(APIView):
-    def post(self, request):
-        serializer = PolygonSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class PolygonDeleteView(APIView):
-    def delete(self, request, pk):
-        try:
-            polygon = PolygonModel.objects.get(pk=pk)
-            polygon.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except PolygonModel.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.data)

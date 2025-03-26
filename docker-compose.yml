@@ -54,7 +54,7 @@ services:
     volumes:
       - ./backend1:/app
     ports:
-      - "8000:8000"
+      - "8800:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
     volumes:
       - ./backend2:/app
     ports:
-      - "8001:8001"
+      - "8801:8001"
     depends_on:
       - backend1
     networks:

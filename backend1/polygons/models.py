@@ -5,7 +5,6 @@ from django.dispatch import receiver
 from django.core.cache import cache
 
 
-
 User = get_user_model()
 
 
@@ -18,10 +17,11 @@ class Polygon(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
 
-@receiver([post_save, post_delete], sender=Polygon)
-def invalidate_polygon_cache(sender, **kwargs):
-    cache.delete("polygons_list")
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
 
 
 class PolygonUserAssignment(models.Model):
@@ -41,3 +41,9 @@ class InvalidPolygon(models.Model):
 
     def __str__(self):
         return f"Invalid: {self.name}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
