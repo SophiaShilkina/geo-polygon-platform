@@ -12,7 +12,10 @@ class Polygon(models.Model):
     name = models.CharField(max_length=255)
     coordinates = models.PolygonField()
     crosses_antimeridian = models.BooleanField(default=False)
-    users = models.ManyToManyField(User, through="PolygonUserAssignment", related_name="polygons", through_fields=("polygon", "user"),)
+    users = models.ManyToManyField(User,
+                                   through="PolygonUserAssignment",
+                                   related_name="polygons",
+                                   through_fields=("polygon", "user"),)
 
     def __str__(self):
         return self.name

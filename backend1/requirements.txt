@@ -9,6 +9,7 @@ psycopg2-binary==2.9.10
 kafka-python==2.1.1
 django-cors-headers==4.7.0
 django-filter==23.5
+django-celery-beat==2.4.0
 drf-yasg==1.21.10
 requests==2.32.3
 daphne==4.1.2

@@ -1,5 +1,4 @@
 from django.apps import AppConfig
-from .tasks import process_polygon_validation_results
 
 
 class PolygonsConfig(AppConfig):
@@ -7,4 +6,4 @@ class PolygonsConfig(AppConfig):
     name = 'polygons'
 
     def ready(self):
-        process_polygon_validation_results.delay()
+        import polygons.signals

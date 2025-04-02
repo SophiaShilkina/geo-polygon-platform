@@ -31,7 +31,7 @@ services:
       KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 18000
       KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 18000
     ports:
-      - "9092:9092"
+      - "9492:9092"
     depends_on:
       - zookeeper
     networks:
@@ -54,7 +54,7 @@ services:
     volumes:
       - ./backend1:/app
     ports:
-      - "8800:8000"
+      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
     volumes:
       - ./backend2:/app
     ports:
-      - "8801:8001"
+      - "8001:8001"
     depends_on:
       - backend1
     networks:
@@ -121,7 +121,7 @@ services:
   swagger:
     image: swaggerapi/swagger-ui
     ports:
-      - "8080:8080"
+      - "8480:8080"
     environment:
       API_URL: http://localhost:8000/swagger.json
     networks:
@@ -131,7 +131,7 @@ services:
     image: sebp/elk
     ports:
       - "5601:5601"
-      - "9200:9200"
+      - "9400:9200"
       - "5004:5044"
     volumes:
       - ./config/elk/logstash/config/logstash.conf:/etc/logstash/conf.d/logstash.conf

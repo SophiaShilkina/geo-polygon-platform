@@ -4,7 +4,6 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Polygon as GeoPolygon
 from .models import Polygon, PolygonUserAssignment, InvalidPolygon
-from .tasks import send_polygon_for_validation
 
 
 User = get_user_model()
@@ -49,6 +48,7 @@ class PolygonSerializer(serializers.ModelSerializer):
             crosses_antimeridian=validated_data.get('crosses_antimeridian', False)
         )
 
+        from .tasks import send_polygon_for_validation
         send_polygon_for_validation.delay({
             "name": polygon.name,
             "coordinates": json.loads(polygon.coordinates.json),
