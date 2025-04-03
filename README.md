@@ -15,7 +15,7 @@
 ## Требования
 
 1. Docker и Docker Compose.
-2. Свободные порты: ```5432, 6379, 8000, 8001, 3000, 8080, 5550, 5601, 9200, 5004```
+2. Свободные порты: ```5432, 6379, 8000, 8001, 3000, 8080, 5050, 5601, 9200, 5004```
 
 ## Запуск проекта
 
@@ -36,7 +36,7 @@
 - Backend 2: http://localhost:8001
 - Frontend: http://localhost:3000
 - Swagger UI: http://localhost:8080
-- pgAdmin: http://localhost:5550
+- pgAdmin: http://localhost:5050
 - Kibana: http://localhost:5601
 
 ---

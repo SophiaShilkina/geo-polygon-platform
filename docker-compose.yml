@@ -112,7 +112,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@gmail.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5550:80"
+      - "5050:80"
     depends_on:
       - db
     networks:
